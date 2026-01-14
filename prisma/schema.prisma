@@ -1,0 +1,95 @@
+// Prisma schema for Exam Analytics Platform
+// Based on context2.md database design
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MistakeType {
+  conceptual
+  calculation
+  misread
+  guess
+}
+
+enum Priority {
+  high
+  medium
+  low
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String?
+  preferences Json?    // JSONB for flexible settings
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  attempts        QuestionAttempt[]
+  recommendations Recommendation[]
+  testSessions    TestSession[]
+
+  @@map("users")
+}
+
+model QuestionAttempt {
+  id                String      @id @default(uuid()) @map("attempt_id")
+  userId            String      @map("user_id")
+  questionMetadata  Json        @map("question_metadata") // JSONB: topic, subtopic, difficulty, skills_tags[]
+  correctness       Boolean
+  confidenceRating  Int         @map("confidence_rating") // 1-5
+  timeTakenSeconds  Int         @map("time_taken_seconds")
+  mistakeType       MistakeType? @map("mistake_type")
+  testSessionId     String?     @map("test_session_id")
+  attemptedAt       DateTime    @default(now()) @map("attempted_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testSession TestSession? @relation(fields: [testSessionId], references: [id])
+
+  @@index([userId, attemptedAt])
+  @@index([testSessionId])
+  @@map("question_attempts")
+}
+
+model Recommendation {
+  id              String    @id @default(uuid()) @map("recommendation_id")
+  userId          String    @map("user_id")
+  generatedAt     DateTime  @default(now()) @map("generated_at")
+  focusArea       String    @map("focus_area")
+  priority        Priority
+  reasoning       String
+  evidence        Json      // JSONB: all data points that led to this
+  actionSteps     String[]  @map("action_steps")
+  confidenceScore Int       @map("confidence_score") // 0-100
+  dataPointCount  Int       @map("data_point_count")
+  followed        Boolean   @default(false)
+  followedAt      DateTime? @map("followed_at")
+  outcomeImproved Boolean?  @map("outcome_improved")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, generatedAt])
+  @@map("recommendations")
+}
+
+model TestSession {
+  id            String   @id @default(uuid()) @map("session_id")
+  userId        String   @map("user_id")
+  testName      String   @map("test_name")
+  testDate      DateTime @map("test_date")
+  overallScore  Float?   @map("overall_score")
+  totalQuestions Int     @map("total_questions")
+  totalTime     Int      @map("total_time") // in seconds
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts QuestionAttempt[]
+
+  @@index([userId, testDate])
+  @@map("test_sessions")
+}
