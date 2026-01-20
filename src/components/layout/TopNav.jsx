@@ -52,7 +52,7 @@ export function TopNav() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 h-17 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src="./logo.png" className='size-10'></img>
-          <span className="text-lg font-semibold tracking-tight">Strata</span>
+          <a className="text-lg font-semibold tracking-tight" href="./">Strata</a>
         </div>
 
         <div className="flex items-center gap-4">

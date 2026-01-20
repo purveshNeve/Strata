@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchAttempts } from '../../services/attempts'
+import { fetchAttemptHistory } from '../../services/attempts'
 
 
 const fallbackAttempts = [
@@ -56,23 +56,20 @@ const fallbackAttempts = [
 
 export function AttemptHistory() {
   const query = useQuery({
-    queryKey: ['attempts'],
-    queryFn: async () => fetchAttempts({ limit: 50 }),
+    queryKey: ['attempt-history'],
+    queryFn: async () => fetchAttemptHistory(),
   })
 
   const rows =
     query.data?.success && Array.isArray(query.data.data) && query.data.data.length > 0
       ? query.data.data.map(row => ({
-          id: row.test_session_id || row.attempt_id,
-          name: row.test_name || `Session ${row.test_session_id || row.attempt_id}`,
-          date: new Date(row.attempted_at).toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-          }),
-          score: row.score ? `${Math.round(row.score)}%` : row.correctness ? '✓' : '×',
-          time: row.time_taken_seconds
-            ? `${Math.round(row.time_taken_seconds / 60)}m`
+          id: row.test ?? row.testDate ?? Math.random().toString(36).slice(2, 8),
+          name: row.test || 'Test session',
+          date: row.testDate
+            ? new Date(row.testDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
             : '—',
+          score: typeof row.overallScore === 'number' ? `${Math.round(row.overallScore)}%` : '—',
+          time: typeof row.avg_time === 'number' ? `${Math.round(row.avg_time)}s` : '—',
         }))
       : fallbackAttempts
 
